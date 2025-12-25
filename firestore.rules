@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function pour vérifier si l'utilisateur est authentifié
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function pour vérifier si l'utilisateur est admin
+    function isAdmin() {
+      return isAuthenticated() 
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Helper function pour vérifier si l'utilisateur est le propriétaire
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Collection: users
+    match /users/{userId} {
+      // Lecture: utilisateur peut lire son propre profil, admin peut lire tous
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      
+      // Création: uniquement lors de l'inscription (même userId que l'auth)
+      allow create: if isAuthenticated() 
+                   && request.auth.uid == userId
+                   && request.resource.data.keys().hasAll(['name', 'email', 'createdAt', 'role'])
+                   && request.resource.data.role in ['user', 'admin'];
+      
+      // Mise à jour: utilisateur peut mettre à jour son propre profil (sauf role), admin peut tout modifier
+      allow update: if isAuthenticated() && (
+        (isOwner(userId) && !('role' in request.resource.data.diff(resource.data).affectedKeys()))
+        || isAdmin()
+      );
+      
+      // Suppression: uniquement admin
+      allow delete: if isAdmin();
+    }
+    
+    // Collection: reports
+    match /reports/{reportId} {
+      // Lecture: utilisateur peut lire ses propres signalements, admin peut lire tous
+      allow read: if isAuthenticated() && (
+        isOwner(resource.data.userId) || isAdmin()
+      );
+      
+      // Création: utilisateur authentifié peut créer un signalement
+      allow create: if isAuthenticated()
+                   && request.auth.uid == request.resource.data.userId
+                   && request.resource.data.keys().hasAll(['title', 'description', 'date', 'status', 'userId'])
+                   && request.resource.data.status in ['En attente', 'En cours', 'Résolu'];
+      
+      // Mise à jour: propriétaire peut modifier (sauf status), admin peut tout modifier
+      allow update: if isAuthenticated() && (
+        (isOwner(resource.data.userId) && resource.data.status == 'En attente')
+        || isAdmin()
+      );
+      
+      // Suppression: propriétaire ou admin
+      allow delete: if isAuthenticated() && (
+        isOwner(resource.data.userId) || isAdmin()
+      );
+    }
+    
+    // Blocage par défaut pour toutes les autres collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

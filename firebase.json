@@ -1,0 +1,31 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "citycare-5aa31",
+          "appId": "1:982274854008:android:69e327a4e75281e707318d",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "citycare-5aa31",
+          "configurations": {
+            "android": "1:982274854008:android:69e327a4e75281e707318d",
+            "ios": "1:982274854008:ios:eed1aab57d93cc6807318d",
+            "macos": "1:982274854008:ios:eed1aab57d93cc6807318d",
+            "web": "1:982274854008:web:0ef3550e06a050c107318d",
+            "windows": "1:982274854008:web:e7d39b9a1cf2cc6007318d"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

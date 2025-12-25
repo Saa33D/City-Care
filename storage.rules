@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Images des signalements
+    match /report_images/{imageId} {
+      // Lecture publique pour afficher les images
+      allow read: if true;
+      
+      // Écriture uniquement pour les utilisateurs authentifiés
+      // Taille max: 5MB, types: jpg, jpeg, png
+      allow write: if request.auth != null
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|jpg|png)');
+      
+      // Suppression uniquement par le propriétaire ou admin
+      allow delete: if request.auth != null;
+    }
+    
+    // Blocage par défaut pour tous les autres chemins
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
